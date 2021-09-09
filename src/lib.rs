@@ -52,9 +52,19 @@ fn make_fixed_array(mut cx: FunctionContext) -> JsResult<JsArray> {
 }
 
 fn make_iterable(mut cx: FunctionContext) -> JsResult<JsBox<Iterable>> {
-    let size = cx.argument::<JsNumber>(0)?.value(&mut cx);
+    let size = cx.argument::<JsNumber>(0)?.value(&mut cx) as u32;
 
     Ok(cx.boxed(Iterable::new(size as u32)))
+}
+
+fn make_constructor(mut cx: FunctionContext) -> JsResult<JsObject> {
+    let size = cx.argument::<JsNumber>(0)?.value(&mut cx) as u32;
+    let global = cx.global();
+    let args = (0..size).map(|n| cx.number(n)).collect::<Vec<_>>();
+    let array_constructor = global.get(&mut cx, "Array")?
+        .downcast_or_throw::<JsFunction, _>(&mut cx)?;
+
+    array_constructor.construct(&mut cx, args)
 }
 
 fn iterable_next(mut cx: FunctionContext) -> JsResult<JsValue> {
@@ -73,5 +83,6 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
     cx.export_function("makeFixedArray", make_fixed_array)?;
     cx.export_function("makeIterable", make_iterable)?;
     cx.export_function("iterableNext", iterable_next)?;
+    cx.export_function("makeConstructor", make_constructor)?;
     Ok(())
 }
